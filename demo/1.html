@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>消息互通、消息接收测试</title>
+  <script src="./msg_bridge.min.js"></script>
+  <script src="vue.min.js"></script>
+</head>
+<body>
+  <div id="main">多页面间的消息互通
+    <button @click="go">启动随机消息接收</button> <button @click="sse">跨页面消息发送</button> 
+    <div v-for="(item,i) in msgList">{{item}}</div>
+  </div>
+</body>
+<script>
+  let msgBridge = new MsgBridge('/xxxx', '111111','22222'+Date.now());
+</script>
+<script>
+  let index = 1;
+  let vm = new Vue({
+    el:'#main',
+    data:function(){
+      return {
+        msgList:[]
+      };
+    },
+    methods:{
+      go:function(){
+        msgBridge.send({type:'go', data: Math.random()});
+      },
+      sse:function(){
+        if(index===1){
+          msgBridge.send({type:'sse', sseUrl:"/sse/sse_connect?token=1111&client_id=11111111111", pageId:'1.html'});
+          index++;
+        }else{
+          msgBridge.send({type:'sseMsg', d:Date.now(), pageId:'1.html'});
+        }
+      }
+    }
+  });
+
+  msgBridge.reg('browser:*', function(msg){
+    vm.msgList.push(msg);
+  });
+  msgBridge.reg('sse:*', function(msg){
+    vm.msgList.push(msg);
+  });
+</script>
+</html>

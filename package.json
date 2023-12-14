@@ -1,0 +1,18 @@
+{
+  "name": "msg-bridge-client",
+  "version": "0.1.0",
+  "description": "msg sender/receive based on sse and fetch",
+  "main": "src/msg_bridge.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "config":{
+  },
+  "keywords": [
+    "sse",
+    "msg",
+    "sharedworker"
+  ],
+  "author": "rockedpanda",
+  "license": "MIT"
+}
