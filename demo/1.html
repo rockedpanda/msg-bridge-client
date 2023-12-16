@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>消息互通、消息接收测试</title>
-  <script src="./msg_bridge.min.js"></script>
+  <script src="../dist/msg_bridge.min.js"></script>
   <script src="vue.min.js"></script>
 </head>
 <body>
@@ -14,7 +14,7 @@
   </div>
 </body>
 <script>
-  let msgBridge = new MsgBridge('/xxxx', '111111','22222'+Date.now());
+  let msgBridge = new MsgBridge('/xxxx');
 </script>
 <script>
   let index = 1;

@@ -2,8 +2,8 @@
 //动态加载SharedWorker
 function MsgBridge(url, clientId, pageId){
   this.url = url;
-  this.clientId=clientId;
-  this.pageId=pageId;
+  this.clientId= this.getClientId(clientId); //浏览器客户端标识id,存储在本地,没有的时候创建一个
+  this.pageId=pageId || location.pathname;
   this.msgCenter = {};
   this.cbMap = {};
   this.sharedWorker = null;
@@ -40,8 +40,16 @@ MsgBridge.prototype.setDefaultCallBack = function(cb){
 //消息到达时的处理函数
 
 
-//发送消息
+/**
+ * 发送消息
+ * @parmas Object msg, 消息内容; 会自动追加pageId和clientId;
+ *         String msg.type, 消息种类,必选字段;标识消息类型
+ */
 MsgBridge.prototype.send = function(msg){
+  if(!msg.type){
+    console.error('消息格式不合法,必须包含type字段,请检查;', msg);
+    return;
+  }
   this.sharedWorker.port.postMessage(Object.assign({pageId: this.pageId, clientId:this.clientId},msg));
 };
 
@@ -51,4 +59,14 @@ MsgBridge.prototype.initClearFn = function(){
   window.addEventListener('beforeunload', () => {
     port.postMessage({type: 'close',  pageId: this.pageId, clientId:this.clientId});
   });
+};
+
+
+//客户端id,传入的话进行记录,供下一次使用;没有传入的话通过时间戳+随机数生成;建议使用外部的统一生成.
+MsgBridge.prototype.getClientId = function(clientId){
+  if(!clientId){
+    clientId = localStorage.getItem('_MSG_BRIDGE_CLIENT_ID') || (Date.now()+(Math.random()+'').slice(2)).slice(1,17);
+  }
+  localStorage.setItem('_MSG_BRIDGE_CLIENT_ID', clientId); //缓存到localStorage
+  return clientId;
 };
