@@ -15,9 +15,9 @@ MsgBridge.prototype.init = function(){
   // 监听 SharedWorker 发送的消息
   this.sharedWorker.port.addEventListener("message", (event) => {
     console.log("Message from MsgBridge SharedWorker:", event.data);
-    // if(regType.endsWith(':*')){
-    //   return msg.type === regType.slice(0, -2);
-    // }
+    if(this.onMessage){
+      return this.onMessage(event);
+    }
     if(typeof event.data === 'string' && event.data.startsWith('sse:')){
       this.cbMap['sse:*'] && this.cbMap['sse:*'](JSON.parse(event.data.slice(4)));
       return;
@@ -38,7 +38,28 @@ MsgBridge.prototype.setDefaultCallBack = function(cb){
 };
 
 //消息到达时的处理函数
-
+MsgBridge.prototype.onMessage = function(event){
+  let msg = event.data;
+  if(typeof msg !=='string'){
+    console.log('异常数据类型,请检查:', event);
+    return;
+  }
+  let index = msg.indexOf('{');
+  if(index===-1){
+    index = msg.indexOf(':');
+  }
+  if(index===-1){
+    console.log('异常数据类型,请检查:', event);
+    return;
+  }
+  let msgType = msg.slice(0, index);
+  let cbMapKeys = Object.keys(this.cbMap).filter(x=>{
+    return msgType.startsWith(x.replace(/\*$/,""));
+  });
+  cbMapKeys.forEach(key=>{
+    this.cbMap[key](msg.slice(index+1));
+  });
+};
 
 /**
  * 发送消息
