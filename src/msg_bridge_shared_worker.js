@@ -26,11 +26,11 @@ self.onconnect = function (e) {
     if (data.type == 'close') {
       return close(port, data);
     }
-    if (data.type == 'sse') {
+    if (data.type == 'sseCreate') {
       return sseCreate(port, data);
     }
-    if (data.type == 'go') {
-      return go(port, data);
+    if (data.type == 'clinet') {
+      return gotClientMsg(port, data);
     }
   });
   port.addEventListener('close',function(e){
@@ -66,7 +66,7 @@ function close(port, data) {
 }
 
 //多窗口间消息广播
-function go(port, data) {
+function gotClientMsg(port, data) {
   let { clientId = '', pageId = '' } = data;
   console.log('=========', clientId, pageId, data);
   connectedPageIds.forEach(pageId => {

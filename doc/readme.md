@@ -20,13 +20,32 @@ msgBridge.reg('监听范围',function(msg){ //监听的回调函数
 */
 msgBridge.reg('event:*', callBack1);
 msgBridge.reg('sse:room:*', callBack2);
-msgBridge.reg('*', callBack3);
-msgBridge.reg('broswer:*', callBack4); //注册浏览器内部各网页间的消息
+msgBridge.reg('*', callBack3); //监听所有消息
+msgBridge.reg('client:*', callBack4); //注册浏览器内部各网页间的消息
 msgBridge.reg('system:*', callBackDefault) //sdk会默认监听system:*类型的所有消息,无需业务层面处理,此函数在new完毕后自动执行
 ```
 
 ### 消息格式设计
 //TODO
+
+
+### 默认消息类型
+* system
+平台从服务端推送到客户端的消息, 此类消息与`room`无关, 一般用于全局控制, 如登出\在其他页面登录\在其他客户端登录\邮件、通知提醒等
+
+* client
+本客户端内部传递的消息，排除掉本页面消息；用于同一客户端各个不同页面间的消息互传，采用广播机制，从当前页面向所有同一域名下注册了相同SharedWorker的页面发送。
+【待分析：SharedWorker是否可以跨域加载】
+
+* sse
+服务端sse推送的消息. 与system类型的消息不同, 此类消息为某些业务逻辑触发\某些用户操作触发,一般是上游消息的后续操作,或者单个页面的事件结束通知等.
+
+* sse:room:$roomId
+sse消息的一种常见形式,通过room及`$roomId`来细化此条消息是归属于那个room. room的设计借鉴了socke.io, 最简但得情况就是roomId取值当前页面URL,来实现不同页面消息的相互隔离.
+
+* event
+系统类事件,与服务器无关. 常见的有页面关闭\页面失去焦点\网络断开\sse中断等, 与客户端状态相关.
+
 
 ### 消息监听设计
 
@@ -39,11 +58,11 @@ msgBridge.reg('监听范围',function(msg){ //监听的回调函数
   //do something with msg
 });
 */
-msgBridge.reg('broswer:*', callBack4); //注册浏览器内部各网页间的消息
+msgBridge.reg('client:*', callBack4); //注册浏览器内部各网页间的消息
 msgBridge.reg('system:*', callBackDefault) //sdk会默认监听system:*类型的所有消息,无需业务层面处理,此函数在new完毕后自动执行
 ```
 
-`broswer:*` 标识所有消息类型为`broser:`开头的消息均可以由回调函数`callBack4`来处理;
+`client:*` 标识所有消息类型为`client:`开头的消息均可以由回调函数`callBack4`来处理;
 
 `callBackFunc`的定义如下:
 ```javascript
@@ -56,10 +75,10 @@ callBackFunc = function(msg_body){
 
 支持对同一scene_type通过不同的过滤规则进行配置, 命中多个则执行多次; 如:
 ```javascript
-msgBridge.reg('broswer:*', callBack4);
-msgBridge.reg('broswer:111', callBack5);
+msgBridge.reg('client:*', callBack4);
+msgBridge.reg('client:111', callBack5);
 ```
-均会匹配`broser:111`这个类型的消息, 且callBack4和callBack5均会执行; 【待优化，考虑控制是否改为阻止后续回调执行？】
+均会匹配`client:111`这个类型的消息, 且callBack4和callBack5均会执行; 【待优化，考虑控制是否改为阻止后续回调执行？】
 
 * 支持自定义消息类型
 msgBridge.reg('abc', func1), 

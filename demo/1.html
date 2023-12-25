@@ -18,6 +18,7 @@
 </script>
 <script>
   let index = 1;
+  let roomId = location.href;
   let vm = new Vue({
     el:'#main',
     data:function(){
@@ -27,20 +28,20 @@
     },
     methods:{
       go:function(){
-        msgBridge.send({type:'go', data: Math.random()});
+        msgBridge.send({type:'client', data: Math.random()});
       },
       sse:function(){
         if(index===1){
-          msgBridge.send({type:'sse', sseUrl:"/sse/sse_connect?token=1111&client_id=11111111111", pageId:'1.html'});
+          msgBridge.send({type:'sseCreate', sseUrl:"/sse/sse_connect?token=1111&client_id=11111111111", pageId:'1.html'});
           index++;
         }else{
-          msgBridge.send({type:'sseMsg', d:Date.now(), pageId:'1.html'});
+          msgBridge.send({type:'sse:room:'+roomId, d:Date.now(), pageId:'1.html'});
         }
       }
     }
   });
 
-  msgBridge.reg('browser:*', function(msg){
+  msgBridge.reg('client:*', function(msg){
     vm.msgList.push(msg);
   });
   msgBridge.reg('sse:*', function(msg){

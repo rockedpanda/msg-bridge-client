@@ -56,8 +56,12 @@ MsgBridge.prototype.onMessage = function(event){
   let cbMapKeys = Object.keys(this.cbMap).filter(x=>{
     return msgType.startsWith(x.replace(/\*$/,""));
   });
+  let msgObj = JSON.parse(msg.slice(index+1));
   cbMapKeys.forEach(key=>{
-    this.cbMap[key](msg.slice(index+1));
+    if(key == 'client' && msgObj.pageId===this.pageId){
+      return; //不处理本页面产生的client消息
+    }
+    this.cbMap[key](msgObj);
   });
 };
 
