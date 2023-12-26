@@ -26,7 +26,29 @@ msgBridge.reg('system:*', callBackDefault) //sdk会默认监听system:*类型的
 ```
 
 ### 消息格式设计
-//TODO
+每种消息都有消息类型: msg_type 和消息实体 msg_body两部分组成 
+
+* 消息类型: msg_type
+字符串格式,可以运行有`0-N`个`:`作为分隔符, 最大长度不超过256字符. 建议仅使用英文+下划线.
+不能使用@符号, 该符号会用于数据序列化时标识msg_type.
+
+* 消息实体: msg_body
+字符串格式, 长度不限, 建议范围`0-200kB`; 建议采用JSON格式的字符串,方便传递复杂数据结构;
+二进制数据需要采用Base64编码后传输
+建议数据较大时在可以压缩的情况下先进行一次压缩;
+
+* 序列化
+由于涉及到部分场景(如推送\跨页面消息传递)时需要先对数据进行序列化;序列化后的格式以 `msg_type@msg_body`形式存在,即整个字符串的第一个@符号作为msg_type和msg_body的分隔符.
+如果是Base64格式的msg_body,则需要以`base64:`开头,后面跟着base64以后的字符串.
+举例如下
+```javascript
+let msg_type = "sse:room:/url/to/page1";
+let msg_body = '{"msg_type":"sse:room:/url/to/page1","user_id":"xxxxx","action_type":"1111","list":[1,2,3]}';
+
+//序列化后的数据
+let msg_serialized = 'sse:room:/url/to/page1@{"msg_type":"sse:room:/url/to/page1","user_id":"xxxxx","action_type":"1111","list":[1,2,3]}';
+let msg_serialized_2 = 'sse:room:/url/to/page1@base64:xxxxxxxxxxxxxxxxxxxxxxx';
+```
 
 
 ### 默认消息类型
