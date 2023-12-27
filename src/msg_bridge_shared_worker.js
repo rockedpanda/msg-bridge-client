@@ -11,9 +11,9 @@ if (!Object.keys) { Object.keys = (function () { var hasOwnProperty = Object.pro
 
 self.onconnect = function (e) {
   var port = e.ports[0];
-  console.log('connect', e);
+  //console.log('connect', e);
   // clients.push(port);
-  port.addEventListener('message', function (e) {
+  port.addEventListener('message', function (e) {  //sdk向SharedWorker的控制,都按照postMessage进行;
     console.log('on message', e);
     if (typeof e.data === 'string') {
       console.log('暂不支持的消息格式,请确定传递的参数是否为合法JSON');

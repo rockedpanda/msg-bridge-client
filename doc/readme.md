@@ -33,9 +33,12 @@ msgBridge.reg('system:*', callBackDefault) //sdk会默认监听system:*类型的
 不能使用@符号, 该符号会用于数据序列化时标识msg_type.
 
 * 消息实体: msg_body
-字符串格式, 长度不限, 建议范围`0-200kB`; 建议采用JSON格式的字符串,方便传递复杂数据结构;
-二进制数据需要采用Base64编码后传输
-建议数据较大时在可以压缩的情况下先进行一次压缩;
+字符串格式, 长度不限, 建议范围`0-200kB`; 采用JSON格式的字符串,结构如下:
+```javascript
+msg_body={pageId:this.pageId, clientId: this.clientId, d: customMsgData}
+```
+d:`customMsgData`为单个消息的具体内容, 其格式定义与各种msg_type相关, 可以为空, 可以是字符串, 可以是对象, 也可以是二进制ArrayBuffer; 这部分会在序列化阶段转换成字符串(含Base64格式)进行传输,必要时会进行压缩.
+
 
 * 序列化
 由于涉及到部分场景(如推送\跨页面消息传递)时需要先对数据进行序列化;序列化后的格式以 `msg_type@msg_body`形式存在,即整个字符串的第一个@符号作为msg_type和msg_body的分隔符.
@@ -43,13 +46,14 @@ msgBridge.reg('system:*', callBackDefault) //sdk会默认监听system:*类型的
 举例如下
 ```javascript
 let msg_type = "sse:room:/url/to/page1";
-let msg_body = '{"msg_type":"sse:room:/url/to/page1","user_id":"xxxxx","action_type":"1111","list":[1,2,3]}';
+let msg_body = '{"pageId":"/xxxxxx/xx","clientId":"1212121212", "d":{"msg_type":"sse:room:/url/to/page1","user_id":"xxxxx","action_type":"1111","list":[1,2,3]}}';
 
 //序列化后的数据
-let msg_serialized = 'sse:room:/url/to/page1@{"msg_type":"sse:room:/url/to/page1","user_id":"xxxxx","action_type":"1111","list":[1,2,3]}';
+let msg_serialized = 'sse:room:/url/to/page1@{"pageId":"/xxxxxx/xx","clientId":"1212121212", "d":{"msg_type":"sse:room:/url/to/page1","user_id":"xxxxx","action_type":"1111","list":[1,2,3]}}';
 let msg_serialized_2 = 'sse:room:/url/to/page1@base64:xxxxxxxxxxxxxxxxxxxxxxx';
 ```
-
+对于msg_body.d这部分消息自定义格式, 需要进行转换; 如果是ArrayBuffer,则转换为对应的Base64编码; 如果是对象, 序列化为JSON字符串;
+如果序列化后的msg_body.d的长度大于100kB, 且该消息为服务端/客户端间的消息, 则会自动进行一次gzip压缩;其特征为'msg_type@base64:gzip:xxxxxxxxxxxxxxxxxxxxxxx'
 
 ### 默认消息类型
 * system
@@ -109,3 +113,13 @@ msgBridge.reg('abc', func1),
 暂不支持`msgBridge.unreg`, 需要此种用法的话考虑回调函数内部控制. 当前建议的用法是绑定正确,需要调整时析构当前的msgBrige对象, 并创建新的. 曲线实现.
 
 ## SharedWorker层
+
+SharedWorker层涉及一下功能: 1,同客户端不同页面消息广播转发; 2, sse创建和sse消息接收; 3, system\event类型消息的产生
+
+sdk向SharedWorker的消息分为两种,均通过postMessage实现
+
+### 控制指令 action
+页面sdk控制SharedWorker指定规定的某些指令操作, 包括: 初始化, 建立sse监听, 关闭sse监听等
+
+### 消息投送 send_msg
+页面向其他接收端进行的消息投递, 包括本地消息和服务器消息.

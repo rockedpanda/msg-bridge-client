@@ -18,11 +18,11 @@ MsgBridge.prototype.init = function(){
     if(this.onMessage){
       return this.onMessage(event);
     }
-    if(typeof event.data === 'string' && event.data.startsWith('sse:')){
-      this.cbMap['sse:*'] && this.cbMap['sse:*'](JSON.parse(event.data.slice(4)));
-      return;
-    }
-    this.cbMap['browser:*'] && this.cbMap['browser:*'](event.data.data);
+    // if(typeof event.data === 'string' && event.data.startsWith('sse:')){
+    //   this.cbMap['sse:*'] && this.cbMap['sse:*'](JSON.parse(event.data.slice(4)));
+    //   return;
+    // }
+    // this.cbMap['browser:*'] && this.cbMap['browser:*'](event.data.data);
   });
   this.sharedWorker.port.start();
   this.sharedWorker.port.postMessage({ type: "init", pageId: this.pageId, clientId:this.clientId });
@@ -32,43 +32,61 @@ MsgBridge.prototype.reg = function(msgTypes, cb){
   this.cbMap[msgTypes] = cb;
 };
 
-//默认的全局默认callback
+/**
+ * 配置默认的全局默认callback 
+ * @param {Function} cb 默认回调
+ * 回调函数格式定义: cb = function(msg_type, msg_body){...}
+ */
 MsgBridge.prototype.setDefaultCallBack = function(cb){
   this.defaultCallBack = cb|| window.msgBridgeDefaultCallBack || (()=>{});
 };
 
 //消息到达时的处理函数
 MsgBridge.prototype.onMessage = function(event){
-  let msg = event.data;
+  let msg = event.data; //msg_type@msg_data
+  let isJSONMsg = false;
   if(typeof msg !=='string'){
     console.log('异常数据类型,请检查:', event);
     return;
   }
-  let index = msg.indexOf('{');
-  if(index===-1){
-    index = msg.indexOf(':');
-  }
+  let index = msg.slice(0,256).indexOf('@');
   if(index===-1){
     console.log('异常数据类型,请检查:', event);
     return;
   }
   let msgType = msg.slice(0, index);
-  let cbMapKeys = Object.keys(this.cbMap).filter(x=>{
+  let cbMapKeys = Object.keys(this.cbMap).filter(x=>{ //查询当前页面支持该消息类型的回调函数.
     return msgType.startsWith(x.replace(/\*$/,""));
   });
-  let msgObj = JSON.parse(msg.slice(index+1));
+  if(cbMapKeys.length===0){ //没有找到监听函数时,交给defaultCallBack处理
+    this.defaultCallBack && this.defaultCallBack(msgType, msg_body);
+    return;
+  }
+  let msg_body = msg.slice(index+1);
+  if(msg_body.startsWith('base64:')){
+    msg_body = msg_body.slice(7);
+    console.log('msg base64: todo: ', msg_body);
+    throw new Error('暂不支持base64,开发中...');
+  }
+  if(msg_body.startsWith('{')){
+    msg_body = JSON.parse(msg_body);
+    isJSONMsg = true;
+  }
   cbMapKeys.forEach(key=>{
-    if(key == 'client' && msgObj.pageId===this.pageId){
+    if(key == 'client' && isJSONMsg && msgObj.pageId===this.pageId){
       return; //不处理本页面产生的client消息
     }
-    this.cbMap[key](msgObj);
+    this.cbMap[key](msg_body); //是JSON格式的提前转好,不是JSON格式的原样返回
   });
 };
 
 /**
  * 发送消息
  * @parmas Object msg, 消息内容; 会自动追加pageId和clientId;
- *         String msg.type, 消息种类,必选字段;标识消息类型
+ *         String msg.type, 消息种类,必选字段;标识消息类型,对应msg_type
+ *         String|Object msg.body, 消息内容实体,必选字段;对应msg_body;允许为空字符串
+ *         String msg.pageId, 页面标识,可选字段;默认使用本页面pageId
+ *         String msg.clientId, 客户端标识,可选字段;默认使用本浏览器clientId
  */
 MsgBridge.prototype.send = function(msg){
   if(!msg.type){
