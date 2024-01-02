@@ -11,7 +11,7 @@ function MsgBridge(url, clientId, pageId){
 }
 //创建worker,建立连接,建立消息监听
 MsgBridge.prototype.init = function(){
-  this.sharedWorker = new SharedWorker('msg_bridge_shared_worker.js?v=0.1.0'); //创建一个实例
+  this.sharedWorker = new SharedWorker('../dist/msg_bridge_shared_worker.js?v=0.1.2'); //创建一个实例
   // 监听 SharedWorker 发送的消息
   this.sharedWorker.port.addEventListener("message", (event) => {
     console.log("Message from MsgBridge SharedWorker:", event.data);
@@ -43,18 +43,37 @@ MsgBridge.prototype.setDefaultCallBack = function(cb){
 
 //消息到达时的处理函数
 MsgBridge.prototype.onMessage = function(event){
+  console.log('event:got:', event);
   let msg = event.data; //msg_type@msg_data
   let isJSONMsg = false;
+  let msgType = '';
+  let msg_body = '';
   if(typeof msg !=='string'){
-    console.log('异常数据类型,请检查:', event);
-    return;
+    if(typeof msg ==='object' && !!msg.type){
+      msgType = msg.type;
+      msg_body = msg;
+    }else{
+      console.log('异常数据类型,请检查:', event);
+      return;
+    }
+  }else{
+    let index = msg.slice(0,256).indexOf('@');
+    if(index===-1){
+      console.log('异常数据类型,请检查:', event);
+      return;
+    }
+    msgType = msg.slice(0, index);
+    msg_body = msg.slice(index+1);
+    if(msg_body.startsWith('base64:')){
+      msg_body = msg_body.slice(7);
+      console.log('msg base64: todo: ', msg_body);
+      throw new Error('暂不支持base64,开发中...');
+    }
+    if(msg_body.startsWith('{')){
+      msg_body = JSON.parse(msg_body);
+      isJSONMsg = true;
+    }
   }
-  let index = msg.slice(0,256).indexOf('@');
-  if(index===-1){
-    console.log('异常数据类型,请检查:', event);
-    return;
-  }
-  let msgType = msg.slice(0, index);
   let cbMapKeys = Object.keys(this.cbMap).filter(x=>{ //查询当前页面支持该消息类型的回调函数.
     return msgType.startsWith(x.replace(/\*$/,""));
   });
@@ -62,18 +81,8 @@ MsgBridge.prototype.onMessage = function(event){
     this.defaultCallBack && this.defaultCallBack(msgType, msg_body);
     return;
   }
-  let msg_body = msg.slice(index+1);
-  if(msg_body.startsWith('base64:')){
-    msg_body = msg_body.slice(7);
-    console.log('msg base64: todo: ', msg_body);
-    throw new Error('暂不支持base64,开发中...');
-  }
-  if(msg_body.startsWith('{')){
-    msg_body = JSON.parse(msg_body);
-    isJSONMsg = true;
-  }
   cbMapKeys.forEach(key=>{
-    if(key == 'client' && isJSONMsg && msgObj.pageId===this.pageId){
+    if(key.startsWith('client') && msg_body.pageId===this.pageId){
       return; //不处理本页面产生的client消息
     }
     this.cbMap[key](msg_body); //是JSON格式的提前转好,不是JSON格式的原样返回

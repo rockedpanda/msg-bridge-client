@@ -1,10 +1,12 @@
 {
   "name": "msg-bridge-client",
   "version": "0.1.0",
+  "git_version":"",
   "description": "msg sender/receive based on sse and fetch",
   "main": "src/msg_bridge.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "http-server ." 
   },
   "config":{
   },

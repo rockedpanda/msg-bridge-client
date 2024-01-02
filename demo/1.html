@@ -9,12 +9,12 @@
 </head>
 <body>
   <div id="main">多页面间的消息互通
-    <button @click="go">启动随机消息接收</button> <button @click="sse">跨页面消息发送</button> 
+    <button @click="sse">启动随机消息接收(SSE接收)</button> <button @click="go">跨页面消息发送</button> 
     <div v-for="(item,i) in msgList">{{item}}</div>
   </div>
 </body>
 <script>
-  let msgBridge = new MsgBridge('/xxxx');
+  let msgBridge = new MsgBridge('/xxxx',null,Math.random()+'');
 </script>
 <script>
   let index = 1;
@@ -28,7 +28,8 @@
     },
     methods:{
       go:function(){
-        msgBridge.send({type:'client', data: Math.random()});
+        console.log('===========client msg send============');
+        msgBridge.send({type:'client', d: Math.random()});
       },
       sse:function(){
         if(index===1){

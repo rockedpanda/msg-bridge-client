@@ -29,7 +29,7 @@ self.onconnect = function (e) {
     if (data.type == 'sseCreate') {
       return sseCreate(port, data);
     }
-    if (data.type == 'clinet') {
+    if (data.type == 'client') {
       return gotClientMsg(port, data);
     }
   });
