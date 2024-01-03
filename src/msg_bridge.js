@@ -75,7 +75,7 @@ MsgBridge.prototype.onMessage = function(event){
     }
   }
   let cbMapKeys = Object.keys(this.cbMap).filter(x=>{ //查询当前页面支持该消息类型的回调函数.
-    return msgType.startsWith(x.replace(/\*$/,""));
+    return x.replace(/\*$/,"").startsWith(msgType);
   });
   if(cbMapKeys.length===0){ //没有找到监听函数时,交给defaultCallBack处理
     this.defaultCallBack && this.defaultCallBack(msgType, msg_body);

@@ -97,7 +97,7 @@ function sseInit(sseUrl) {
     let clients = Object.values(connectedPorts);
     for (var i = 0; i < clients.length; i++) {
       var eElement = clients[i];
-      eElement.postMessage('sse:'+JSON.stringify(d.data));
+      eElement.postMessage('sse@'+JSON.stringify(d.data));
     }
   });
   sse.addEventListener('error', function(err){
@@ -106,6 +106,7 @@ function sseInit(sseUrl) {
   });
 }
 
+//重新连接sse
 function reloadSSE(){
   if(sse && sse.ready_state == 2){ //连接状态正常, 则不需要重连
     return;
@@ -114,7 +115,10 @@ function reloadSSE(){
   sseInit(lastSseUrl);
 }
 
-//根据msg信息搜索到监听了此类消息的port的数组.
+/*
+=== 后续细化消息投送范围时预留 ===
+
+//根据msg信息搜索到监听了此类消息的port的数组. 
 function getClientsByMsgInfo(msg) {
   let pageIds = Object.keys(connectedPorts);
   let ans = [];
@@ -128,3 +132,5 @@ function isTypeOK(pageId, msg) {
   return false;
 }
 //myWorker.port.postMessage('sse')
+
+*/
