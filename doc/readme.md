@@ -18,7 +18,7 @@ msgBridge.reg('监听范围',function(msg){ //监听的回调函数
   //do something with msg
 });
 */
-msgBridge.reg('event:*', callBack1);
+msgBridge.reg('system', callBack1);
 msgBridge.reg('sse:room:*', callBack2);
 msgBridge.reg('*', callBack3); //监听所有消息
 msgBridge.reg('client:*', callBack4); //注册浏览器内部各网页间的消息
@@ -56,8 +56,12 @@ let msg_serialized_2 = 'sse:room:/url/to/page1@base64:xxxxxxxxxxxxxxxxxxxxxxx';
 如果序列化后的msg_body.d的长度大于100kB, 且该消息为服务端/客户端间的消息, 则会自动进行一次gzip压缩;其特征为'msg_type@base64:gzip:xxxxxxxxxxxxxxxxxxxxxxx'
 
 ### 默认消息类型
-* system
-平台从服务端推送到客户端的消息, 此类消息与`room`无关, 一般用于全局控制, 如登出\在其他页面登录\在其他客户端登录\邮件、通知提醒等
+|类型名|含义|
+|--|--|
+|client|(业务相关)客户端 -> 客户端|
+|sse|(业务相关)服务端 -> 客户端|
+|system|系统通知等所有其他|
+client和sse均是由业务逻辑有研发人员根据流程处理产生的, system是自动产生的.
 
 * client
 本客户端内部传递的消息，排除掉本页面消息；用于同一客户端各个不同页面间的消息互传，采用广播机制，从当前页面向所有同一域名下注册了相同SharedWorker的页面发送。
@@ -65,12 +69,21 @@ let msg_serialized_2 = 'sse:room:/url/to/page1@base64:xxxxxxxxxxxxxxxxxxxxxxx';
 
 * sse
 服务端sse推送的消息. 与system类型的消息不同, 此类消息为某些业务逻辑触发\某些用户操作触发,一般是上游消息的后续操作,或者单个页面的事件结束通知等.
+** 连接建立成功
+msg_type:sse, msg_body:{d:{action_type:'sse_connected'}, clientId:'', pageId:'xxxx'} //某页面监听SSE成功后,服务端通过SSE推送连接建立成功的消息;此时其他pageId的页面应停止SSE创建,避免重复创建SSE导致抢占问题.
 
 * sse:room:$roomId
 sse消息的一种常见形式,通过room及`$roomId`来细化此条消息是归属于那个room. room的设计借鉴了socke.io, 最简但得情况就是roomId取值当前页面URL,来实现不同页面消息的相互隔离.
 
-* event
-系统类事件,与服务器无关. 常见的有页面关闭\页面失去焦点\网络断开\sse中断等, 与客户端状态相关.
+* system
+系统类事件,及平台从服务端推送到客户端的消息, 此类消息与`room`无关, 一般用于全局控制, 如登出\在其他页面登录\在其他客户端登录\邮件、通知提醒, 常见的有页面关闭\页面失去焦点\网络断开\sse中断等, 与客户端状态相关.等
+需要注意的事件:
+** 登录成功
+msg_type:system, msg_body:{d:{action_type:'login_success'}, clientId:'', pageId:'xxxx'} //用户登录成功, 如果页面有缓存用户信息,可能需要触发用户信息更新
+
+** 退出登录
+msg_type:system, msg_body:{d:{action_type:'logout_success'}, clientId:'', pageId:'xxxx'} //用户退出登录成功, 收到该消息的所有页面应该清理用户信息并切换到登录页
+
 
 
 ### 消息监听设计
@@ -114,7 +127,7 @@ msgBridge.reg('abc', func1),
 
 ## SharedWorker层
 
-SharedWorker层涉及一下功能: 1,同客户端不同页面消息广播转发; 2, sse创建和sse消息接收; 3, system\event类型消息的产生
+SharedWorker层涉及一下功能: 1,同客户端不同页面消息广播转发; 2, sse创建和sse消息接收; 3, system类型消息的产生
 
 sdk向SharedWorker的消息分为两种,均通过postMessage实现
 
