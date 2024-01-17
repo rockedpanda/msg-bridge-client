@@ -11,7 +11,7 @@ function MsgBridge(url, clientId, pageId){
 }
 //创建worker,建立连接,建立消息监听
 MsgBridge.prototype.init = function(){
-  this.sharedWorker = new SharedWorker('../dist/msg_bridge_shared_worker.js?v=0.1.2'); //创建一个实例
+  this.sharedWorker = new SharedWorker('../dist/msg_bridge_shared_worker.js?v=0.1.3'); //创建一个实例
   // 监听 SharedWorker 发送的消息
   this.sharedWorker.port.addEventListener("message", (event) => {
     console.log("Message from MsgBridge SharedWorker:", event.data);

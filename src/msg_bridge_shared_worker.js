@@ -108,7 +108,8 @@ function sseInit(sseUrl) {
 
 //重新连接sse
 function reloadSSE(){
-  if(sse && sse.ready_state == 2){ //连接状态正常, 则不需要重连
+  console.log('sse: ', sse && sse.ready_state);
+  if(sse ){ //连接状态正常, 则不需要重连 //&& sse.ready_state == 2
     return;
   }
   sse =null;
